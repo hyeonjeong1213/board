@@ -1,0 +1,489 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>실시간 투표 집계기</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 30px 15px;
+      font-family: Arial, sans-serif;
+      background: #f4f6fb;
+      color: #222;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.07);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      color: #273c75;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 30px;
+    }
+
+    .question {
+      padding: 18px;
+      background: #f0f3ff;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .option-list {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .option-btn {
+      flex: 1;
+      padding: 20px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      background: white;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .option-btn:hover {
+      border-color: #4876e8;
+      background: #f2f5ff;
+    }
+
+    .option-btn.selected {
+      border-color: #4876e8;
+      background: #eaf0ff;
+      color: #315ac4;
+    }
+
+    .vote-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      background: #4876e8;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .vote-btn:hover {
+      background: #315ac4;
+    }
+
+    .vote-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .result-section {
+      margin-top: 35px;
+    }
+
+    .result-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .total {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 22px;
+    }
+
+    .result-item {
+      margin-bottom: 22px;
+    }
+
+    .result-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .bar-bg {
+      height: 22px;
+      background: #e9edf5;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 20px;
+      transition: width 0.5s ease;
+    }
+
+    .bar-a {
+      background: #4876e8;
+    }
+
+    .bar-b {
+      background: #f39c6b;
+    }
+
+    .message {
+      margin-top: 15px;
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      min-height: 20px;
+    }
+
+    .refresh-info {
+      margin-top: 20px;
+      text-align: center;
+      color: #aaa;
+      font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 22px 18px;
+      }
+
+      .option-list {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+
+    <h1>📊 실시간 투표</h1>
+
+    <p class="subtitle">
+      원하는 항목을 선택하고 투표해 주세요!
+    </p>
+
+    <div class="question">
+      다음 중 어떤 안이 더 마음에 드나요?
+    </div>
+
+    <!-- 투표 항목 -->
+    <div class="option-list">
+
+      <button
+        class="option-btn"
+        onclick="selectOption('A')"
+        id="btnA">
+        A안
+      </button>
+
+      <button
+        class="option-btn"
+        onclick="selectOption('B')"
+        id="btnB">
+        B안
+      </button>
+
+    </div>
+
+    <!-- 투표하기 -->
+    <button
+      class="vote-btn"
+      id="voteBtn"
+      onclick="submitVote()">
+      투표하기
+    </button>
+
+    <div class="message" id="message">
+      투표할 항목을 선택해 주세요.
+    </div>
+
+    <div class="result-section">
+
+      <div class="result-title">
+        📈 실시간 투표 현황
+      </div>
+
+      <div class="total" id="total">
+        총 0명 참여
+      </div>
+
+      <!-- A안 결과 -->
+      <div class="result-item">
+
+        <div class="result-info">
+          <span>A안</span>
+          <span id="countA">0표 (0%)</span>
+        </div>
+
+        <div class="bar-bg">
+          <div class="bar bar-a" id="barA"></div>
+        </div>
+
+      </div>
+
+      <!-- B안 결과 -->
+      <div class="result-item">
+
+        <div class="result-info">
+          <span>B안</span>
+          <span id="countB">0표 (0%)</span>
+        </div>
+
+        <div class="bar-bg">
+          <div class="bar bar-b" id="barB"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="refresh-info" id="refreshInfo">
+      결과를 불러오는 중...
+    </div>
+
+  </div>
+
+  <script>
+
+    // GAS 웹 앱 배포 URL로 변경
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwop4sOVoJCRZyc7puaNzSuynN-4pJJlAKWAs-sTsCRp3-x5AMt1IUpJZQWYcoxYwlNFw/exec";
+
+    let selectedOption = null;
+    let isLoading = false;
+
+    /**
+     * 항목 선택
+     */
+    function selectOption(option) {
+
+      if (isLoading) return;
+
+      selectedOption = option;
+
+      document.getElementById("btnA")
+        .classList.toggle("selected", option === "A");
+
+      document.getElementById("btnB")
+        .classList.toggle("selected", option === "B");
+
+      document.getElementById("message").textContent =
+        option + "안을 선택했습니다.";
+
+    }
+
+    /**
+     * GAS에 JSONP 요청
+     */
+    function callGAS(params) {
+
+      return new Promise(function(resolve, reject) {
+
+        const callbackName =
+          "voteCallback_" +
+          Date.now() +
+          "_" +
+          Math.floor(Math.random() * 100000);
+
+        const script = document.createElement("script");
+
+        const query = new URLSearchParams({
+          ...params,
+          callback: callbackName
+        });
+
+        const url = GAS_URL + "?" + query.toString();
+
+        let finished = false;
+
+        const timer = setTimeout(function() {
+          finishError(new Error("서버 응답 시간이 초과되었습니다."));
+        }, 15000);
+
+        function cleanup() {
+          clearTimeout(timer);
+          delete window[callbackName];
+
+          if (script.parentNode) {
+            script.parentNode.removeChild(script);
+          }
+        }
+
+        function finishError(error) {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(error);
+        }
+
+        window[callbackName] = function(data) {
+          if (finished) return;
+
+          finished = true;
+          cleanup();
+          resolve(data);
+        };
+
+        script.onerror = function() {
+          finishError(new Error("서버에 연결하지 못했습니다."));
+        };
+
+        script.src = url;
+
+        document.body.appendChild(script);
+
+      });
+
+    }
+
+    /**
+     * 투표하기
+     */
+    async function submitVote() {
+
+      if (!selectedOption) {
+        alert("투표할 항목을 먼저 선택해 주세요.");
+        return;
+      }
+
+      if (isLoading) return;
+
+      isLoading = true;
+
+      const voteBtn = document.getElementById("voteBtn");
+      const message = document.getElementById("message");
+
+      voteBtn.disabled = true;
+      voteBtn.textContent = "투표 처리 중...";
+
+      try {
+
+        const result = await callGAS({
+          action: "vote",
+          option: selectedOption
+        });
+
+        if (!result.success) {
+          throw new Error(result.message || "투표에 실패했습니다.");
+        }
+
+        updateResults(result);
+
+        message.textContent =
+          selectedOption + "안 투표가 완료되었습니다!";
+
+      } catch (error) {
+
+        message.textContent = error.message;
+        alert(error.message);
+
+      } finally {
+
+        isLoading = false;
+        voteBtn.disabled = false;
+        voteBtn.textContent = "투표하기";
+
+      }
+
+    }
+
+    /**
+     * 전체 투표 결과 가져오기
+     */
+    async function loadResults() {
+
+      try {
+
+        const result = await callGAS({
+          action: "results"
+        });
+
+        if (!result.success) {
+          throw new Error(result.message || "결과 조회 실패");
+        }
+
+        updateResults(result);
+
+        document.getElementById("refreshInfo").textContent =
+          "마지막 업데이트: " +
+          new Date().toLocaleTimeString("ko-KR");
+
+      } catch (error) {
+
+        document.getElementById("refreshInfo").textContent =
+          error.message;
+
+      }
+
+    }
+
+    /**
+     * 결과 화면 갱신
+     */
+    function updateResults(data) {
+
+      const votes = data.votes || {};
+      const percentages = data.percentages || {};
+
+      const countA = Number(votes.A || 0);
+      const countB = Number(votes.B || 0);
+
+      const percentA = Number(percentages.A || 0);
+      const percentB = Number(percentages.B || 0);
+
+      document.getElementById("countA").textContent =
+        countA + "표 (" + percentA + "%)";
+
+      document.getElementById("countB").textContent =
+        countB + "표 (" + percentB + "%)";
+
+      document.getElementById("total").textContent =
+        "총 " + (data.total || 0) + "명 참여";
+
+      document.getElementById("barA").style.width =
+        percentA + "%";
+
+      document.getElementById("barB").style.width =
+        percentB + "%";
+
+    }
+
+    /**
+     * 최초 실행 및 10초마다 결과 갱신
+     */
+    loadResults();
+
+    setInterval(function() {
+      if (!isLoading) {
+        loadResults();
+      }
+    }, 10000);
+
+  </script>
+
+</body>
+</html>
